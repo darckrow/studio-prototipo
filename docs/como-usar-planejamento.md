@@ -22,4 +22,8 @@ Projetos antigos conservam a etapa geral, com checklist inicialmente vazio. O St
 
 ## Dados e backup
 
-Tudo permanece no SQLite local, incluindo miniaturas, processos e aprovações. A migração para a versão 2 guarda automaticamente uma cópia anterior em `data/backups/antes-migracao-v2-*.sqlite`. O backup normal inclui os novos dados. O restaurador aceita backups v1, v2 e v3; bases antigas são migradas na abertura seguinte.
+Tudo permanece no SQLite local, incluindo miniaturas, processos e aprovações. Nos caminhos abaixo, `<STUDIO_DATA_DIR>` é a pasta de dados definida pela variável `STUDIO_DATA_DIR`; sem ela, é a pasta `data` do projeto.
+
+Ao abrir uma base v1 ou v2, o Studio guarda automaticamente uma cópia em `<STUDIO_DATA_DIR>/backups/antes-migracao-v3-*.sqlite` e só depois migra para a versão 3. O backup normal inclui os novos dados.
+
+O restaurador aceita backups v1, v2 e v3. Se já existir um banco ativo, ele é preservado de duas formas: uma cópia em `<STUDIO_DATA_DIR>/backups/antes-restauracao-*.sqlite` e o próprio arquivo anterior, renomeado para `<STUDIO_DATA_DIR>/antes-restauracao-*.sqlite`. Se não houver banco ativo, nenhuma dessas cópias é criada. Um backup v1 ou v2 restaurado é migrado para a versão 3 na próxima abertura do Studio, que gera a cópia `antes-migracao-v3` descrita acima.
