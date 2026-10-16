@@ -1,0 +1,257 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Studio — Guia completo de configuração Google</title><style>body{font:15px/1.75 Arial,Helvetica,sans-serif;margin:0;background:#f1f4f4;color:#233436}main{max-width:1000px;margin:30px auto;background:white;padding:45px;border:1px solid #d4dddd;border-radius:10px}h1{font-size:32px;line-height:1.25;letter-spacing:-1px}h2{font-size:23px;line-height:1.35;border-top:1px solid #d4dddd;padding-top:25px;margin-top:40px;break-after:avoid}h3{font-size:18px;margin-top:25px}li{margin:8px 0}a{color:#245d66;overflow-wrap:anywhere}code{background:#eef2f2;border-radius:3px;padding:2px 5px;overflow-wrap:anywhere}pre{background:#eef2f2;padding:18px;border-radius:6px;white-space:pre-wrap;overflow-wrap:anywhere}pre code{padding:0}blockquote{border-left:3px solid #427277;padding:12px 18px;margin:20px 0;background:#f0f5f4}.table{overflow:auto}table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid #d2dddd;padding:10px;text-align:left;vertical-align:top}th{background:#edf3f2}.brand{letter-spacing:3px;font-size:12px;color:#427277}@media(max-width:650px){main{margin:0;padding:22px;border:0;border-radius:0}h1{font-size:27px}}@media print{body{background:white;font-size:11pt}main{margin:0;padding:0;border:0;max-width:none}h2{page-break-after:avoid}pre,blockquote,tr{break-inside:avoid}.table{overflow:visible}a{color:inherit}a[href^="https:"]:after{content:" (" attr(href) ")";font-size:8pt;overflow-wrap:anywhere}}</style></head><body><main><div class="brand">STUDIO / DOCUMENTAÇÃO DE CONFIGURAÇÃO</div><h1>Studio — guia completo de perfil, Google Agenda e aprovação pelo Google Forms</h1>
+<p>Versão: 16/10/2026. Guia da aplicação Next.js local, para uma conta Gmail pessoal. Pode ser compartilhado com a pessoa que vai instalar/configurar o Studio. Não contém credenciais reais.</p>
+<h2>1. O que esta integração faz</h2>
+<ul>
+<li>Envia os prazos dos projetos para um calendário Google separado chamado <strong>Studio</strong>.</li>
+<li>Atualiza título, data e etapa dos eventos criados pelo Studio, usando vínculos estáveis para não duplicá-los.</li>
+<li>Gera um Google Forms com os conteúdos de um planejamento e um link de resposta para enviar ao cliente.</li>
+<li>Recupera as aprovações e os comentários do Google Forms para os cards do planejamento.</li>
+<li>Mantém clientes, financeiro, briefing interno e tarefas no banco local. Somente dados necessários à agenda/aprovação são enviados ao Google.</li>
+</ul>
+<p>A sincronização da agenda é <strong>Studio → Google Agenda</strong>. Editar um evento no Google não altera o projeto local. Se o Studio detectar diferença, sinaliza um conflito e deixa você escolher se deseja republicar os dados locais.</p>
+<p>O cliente responde no Google mesmo com seu computador desligado. O Studio precisa estar aberto e conectado à internet para enviar atualizações ou buscar as respostas. Não é necessário hospedar a aplicação para este fluxo.</p>
+<p>Este guia descreve a configuração e o comportamento implementados. A ativação real precisa ser concluída na conta Google do estúdio; os testes automatizados usam respostas simuladas e não substituem o teste com sua conta.</p>
+<h2>2. Quem precisa fazer o quê</h2>
+<div class="table"><table><thead><tr><th>Pessoa</th><th>Responsabilidade</th></tr></thead><tbody>
+<tr><td>Responsável pelo estúdio</td><td>Configurar o Google Cloud, importar credenciais e autorizar a conta</td></tr>
+<tr><td>Pessoa que opera o Studio</td><td>Criar projetos/planejamentos, sincronizar e enviar links</td></tr>
+<tr><td>Cliente que aprova conteúdo</td><td>Abrir o link de resposta e preencher suas decisões</td></tr>
+</tbody></table></div>
+<p>O cliente final <strong>não precisa criar projeto Google Cloud, receber Client secret ou configurar APIs</strong>. Envie a ele o arquivo <code>public/guia-aprovacao-cliente.html</code>, que contém somente as instruções para responder.</p>
+<h2>3. Antes de começar</h2>
+<ol>
+<li>Tenha uma conta Gmail pessoal controlada pelo estúdio. Evite usar uma conta de terceiros que possa perder acesso depois.</li>
+<li>Confirme que o Studio abre em <code>http://127.0.0.1:3000</code> ou <code>http://localhost:3000</code>.</li>
+<li>Use a aplicação iniciada por <strong>Iniciar Studio.cmd</strong> ou <code>npm start</code>. O <code>index.html</code> estático não conecta contas reais.</li>
+<li>Mantenha uma cópia de segurança dos dados em <strong>Dados e backup → Baixar backup</strong>.</li>
+<li>Use um navegador atualizado, acesso à internet e permissão para acessar Google Cloud, Agenda, Forms e Drive.</li>
+</ol>
+<p>Na pasta do projeto, uma instalação nova usa:</p>
+<pre><code>
+npm install
+
+npm run build
+
+npm start
+
+</code></pre>
+<p>Se o servidor foi iniciado em outra porta, os endereços de retorno mudam. A tela <strong>Perfil e integrações</strong> mostra os endereços exatos da execução atual.</p>
+<h2>4. Editar o perfil e as preferências</h2>
+<p>Clique no seu nome, no canto inferior esquerdo, ou no avatar no canto superior direito.</p>
+<p>Em <strong>Meu perfil</strong>, preencha:</p>
+<ul>
+<li>Seu nome: aparece no menu e define as iniciais do avatar.</li>
+<li>Nome do estúdio: aparece na área de trabalho.</li>
+<li>Função: por exemplo, Editora, Videomaker ou Social media.</li>
+<li>E-mail de contato: uma preferência local; não escolhe a conta Google que será conectada.</li>
+<li>Cor de destaque: verde, lilás ou azul.</li>
+<li>Espaçamento: confortável ou compacto.</li>
+<li>Sincronização automática: permite tentativas ao abrir a aplicação, depois de alterações e periodicamente com a tela visível.</li>
+<li>Miniaturas nos formulários: habilita o envio das imagens ao Google Drive ao gerar formulários novos.</li>
+</ul>
+<p>Clique <strong>Salvar perfil e preferências</strong>. O perfil é salvo no SQLite. Ele não é um sistema de login/senha ou de múltiplos usuários.</p>
+<h3>Atenção às miniaturas</h3>
+<p>Por padrão, o envio de imagens está desativado. O Forms recebe título, legenda, data, canal, formato e link do material, quando houver.</p>
+<p>Se você ativar <strong>Incluir miniaturas nos formulários</strong>, o Studio enviará cópias das miniaturas para o Drive da conta conectada e dará acesso de leitura por link para que o Forms possa incorporá-las. Não envie uma imagem que precise permanecer estritamente privada. O envio não publica outros arquivos do seu Drive.</p>
+<p>Encerrar um formulário interrompe suas respostas; não apaga automaticamente as cópias das miniaturas do Drive. Para remover essas cópias, localize os arquivos com nomes começando em <strong>Studio —</strong> na sua conta Drive, depois de verificar que não serão mais necessários.</p>
+<h2>5. Criar o projeto no Google Cloud</h2>
+<ol>
+<li>Acesse <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer">Google Cloud Console</a> usando o Gmail do estúdio.</li>
+<li>No seletor de projetos, escolha <strong>Novo projeto / New project</strong>.</li>
+<li>Dê um nome, por exemplo <strong>Studio — Gestão e aprovações</strong>.</li>
+<li>Conclua a criação e selecione esse projeto no topo da página.</li>
+</ol>
+<p>Os nomes de menus podem variar conforme idioma e atualizações do Google. Confirme sempre qual projeto está selecionado antes de alterar APIs ou credenciais.</p>
+<h2>6. Ativar as APIs</h2>
+<p>Abra <strong>APIs e serviços → Biblioteca / APIs &amp; Services → Library</strong>. Ative, uma de cada vez:</p>
+<ol>
+<li><strong>Google Calendar API</strong> — criar o calendário e gerenciar os eventos do Studio.</li>
+<li><strong>Google Forms API</strong> — criar formulários e ler as respostas.</li>
+<li><strong>Google Drive API</strong> — gerenciar o acesso dos respondentes e enviar miniaturas quando habilitadas.</li>
+</ol>
+<p>Não basta possuir uma conta Google: essas APIs precisam estar ativadas no projeto associado às credenciais. <a href="https://developers.google.com/identity/protocols/oauth2/web-server" target="_blank" rel="noopener noreferrer">Orientação oficial de configuração OAuth</a>.</p>
+<p>Não é usada uma chave API comum, senha do Gmail, senha de aplicativo nem conta de serviço. Esta integração usa um <strong>cliente OAuth do tipo Aplicativo da Web</strong>.</p>
+<h2>7. Configurar o consentimento para Gmail pessoal</h2>
+<p>Abra <strong>Google Auth Platform</strong>. Se o Console mostrar <strong>Tela de consentimento OAuth / OAuth consent screen</strong>, entre por essa opção.</p>
+<h3>Branding / Marca</h3>
+<p>Preencha o nome do aplicativo, e-mail de suporte e e-mail de contato do desenvolvedor. Use endereços que você controla. Salve.</p>
+<h3>Audience / Público</h3>
+<p>Para Gmail pessoal, configure como <strong>Externo / External</strong>. Durante a validação, mantenha em <strong>Testing / Teste</strong> e adicione seu próprio Gmail à lista de usuários de teste.</p>
+<p>Essa lista corresponde a quem <strong>conecta uma conta ao Studio</strong>. Não é a lista de clientes que respondem aos formulários.</p>
+<h3>Data Access / Acesso aos dados</h3>
+<p>Adicione os escopos usados pelo aplicativo. A autorização solicitará:</p>
+<pre><code>
+openid
+
+email
+
+https://www.googleapis.com/auth/calendar.app.created
+
+https://www.googleapis.com/auth/forms.body
+
+https://www.googleapis.com/auth/forms.responses.readonly
+
+https://www.googleapis.com/auth/drive.file
+
+</code></pre>
+<div class="table"><table><thead><tr><th>Escopo</th><th>Uso no Studio</th></tr></thead><tbody>
+<tr><td>openid e email</td><td>Identificar qual conta foi conectada</td></tr>
+<tr><td>calendar.app.created</td><td>Criar calendários secundários do aplicativo e gerenciar seus eventos</td></tr>
+<tr><td>forms.body</td><td>Criar e configurar os formulários</td></tr>
+<tr><td>forms.responses.readonly</td><td>Consultar respostas</td></tr>
+<tr><td>drive.file</td><td>Trabalhar com os arquivos criados/usados pela integração, incluindo compartilhamento do formulário e miniaturas</td></tr>
+</tbody></table></div>
+<p>Não substitua esses escopos por acesso irrestrito a todos os calendários ou a todo o Drive. <a href="https://developers.google.com/workspace/calendar/api/auth" target="_blank" rel="noopener noreferrer">Escopos do Calendar</a>.</p>
+<h3>Expiração no modo de teste</h3>
+<p>Aplicativos externos em Testing podem receber refresh tokens com validade de sete dias quando pedem permissões além das básicas de identificação. O Studio pedirá reconexão quando a autorização expirar ou for revogada. Para uso contínuo/distribuição, avalie mover para Production e seguir a eventual verificação exigida pelo Google; não presuma que publicar remove todos os requisitos. <a href="https://developers.google.com/identity/protocols/oauth2#expiration" target="_blank" rel="noopener noreferrer">Regras de expiração</a>.</p>
+<h2>8. Criar as credenciais OAuth</h2>
+<ol>
+<li>Em <strong>Google Auth Platform → Clients / Clientes</strong>, escolha <strong>Create client / Criar cliente</strong>.</li>
+<li>Selecione <strong>Web application / Aplicativo da Web</strong>.</li>
+<li>Dê um nome, por exemplo <strong>Studio local</strong>.</li>
+<li>Em <strong>Authorized redirect URIs / URIs de redirecionamento autorizados</strong>, adicione exatamente:</li>
+</ol>
+<pre><code>
+http://127.0.0.1:3000/api/google/callback
+
+http://localhost:3000/api/google/callback
+
+</code></pre>
+<ol>
+<li>Não acrescente barra final, não mude http para https na execução local e não remova o caminho <code>/api/google/callback</code>.</li>
+<li>Para outra porta, copie os valores mostrados na tela do Studio em vez dos exemplos acima.</li>
+<li>Crie o cliente e baixe o JSON de credenciais. Guarde esse arquivo em local privado. Não o envie ao cliente final, em conversas ou no repositório do projeto.</li>
+</ol>
+<p>Neste fluxo, a troca é feita no backend. Não é necessário configurar JavaScript origins para uma biblioteca de login no navegador.</p>
+<p>O Client ID costuma terminar em <code>.apps.googleusercontent.com</code>. O Client secret vem no arquivo baixado. Você pode precisar guardar o segredo quando ele for apresentado, pois o Google pode não permitir consultá-lo novamente. <a href="https://developers.google.com/identity/protocols/oauth2/web-server" target="_blank" rel="noopener noreferrer">Credenciais OAuth Web</a>.</p>
+<h2>9. Importar as credenciais no Studio</h2>
+<ol>
+<li>Volte ao Studio e clique no nome/avatar → <strong>Perfil e integrações</strong>.</li>
+<li>Na área <strong>Conexão Google</strong>, escolha o JSON em <strong>Importar credenciais OAuth</strong>.</li>
+<li>Confira que o Client ID foi preenchido. O segredo fica em um campo de senha.</li>
+<li>Clique <strong>Salvar credenciais</strong>.</li>
+<li>O botão <strong>Conectar Google</strong> será habilitado.</li>
+</ol>
+<p>Se preferir preencher manualmente, use o Client ID e Client secret do mesmo cliente Web. Não cole o JSON inteiro em um desses campos. Para manter um segredo já salvo, deixe o campo Client secret vazio.</p>
+<p>Importar um JSON de cliente Desktop/Installed não funciona neste fluxo. Crie um cliente Web.</p>
+<h2>10. Autorizar a conta</h2>
+<ol>
+<li>Clique <strong>Conectar Google</strong>.</li>
+<li>Escolha o Gmail do estúdio, o mesmo adicionado como usuário de teste.</li>
+<li>Confira o aplicativo/projeto antes de continuar.</li>
+<li>Autorize as permissões solicitadas para Agenda, Forms, respostas e arquivos do Studio. Se uma permissão necessária for desmarcada, a conexão não será concluída.</li>
+<li>Aguarde o retorno ao Studio. A tela mostrará a conta conectada.</li>
+</ol>
+<p>O aplicativo usa uma tentativa de conexão com validade de dez minutos, cookie local e código de uso único. Se expirar ou se você trocar de endereço durante o fluxo, inicie de novo pela tela de perfil.</p>
+<p>Em aplicativos ainda não verificados, o Google pode exibir um aviso. Confirme que se trata do seu próprio projeto de teste e siga as políticas indicadas pelo Google; para distribuição, trate a publicação/verificação antes de pedir que outras pessoas conectem suas contas.</p>
+<h2>11. Primeiro teste do Google Agenda</h2>
+<ol>
+<li>Cadastre um cliente e um projeto com data de entrega próxima.</li>
+<li>Abra <strong>Agenda → Sincronizar Google Agenda</strong>.</li>
+<li>O Studio cria o calendário <strong>Studio</strong> na primeira sincronização.</li>
+<li>Use <strong>Abrir calendário</strong> e confirme o evento de dia inteiro.</li>
+<li>Altere a entrega no Studio e sincronize outra vez: o mesmo evento deve mudar de data, sem criar cópia.</li>
+<li>Marque o projeto como Concluído: o evento será identificado com <code>[Concluído]</code> na próxima atualização.</li>
+</ol>
+<p>O evento recebe título do projeto, nome do cliente, etapa e prazo. Valores, observações internas e lista de tarefas não são enviados.</p>
+<p>Arquivar um projeto remove seu evento gerenciado na próxima sincronização. Restaurar o projeto permite republicá-lo. Compromissos pessoais e eventos que não pertencem ao Studio não são alterados.</p>
+<h3>Conflitos</h3>
+<p>Se o evento for alterado ou excluído no Google, o Studio sinaliza o conflito em vez de sobrescrever silenciosamente. Abra Agenda, confira a mensagem e use <strong>Republicar versão do Studio</strong> somente se quiser substituir os dados do evento pelos dados locais.</p>
+<p>Essa ação não transforma a integração em sincronização de duas vias. Caso queira conservar a nova data, atualize primeiro o projeto no Studio.</p>
+<h2>12. Gerar o primeiro link de aprovação</h2>
+<ol>
+<li>Abra <strong>Planejamento → Novo planejamento</strong>.</li>
+<li>Escolha cliente, semana, título e orientação.</li>
+<li>Adicione conteúdos com data, canal, formato, legenda e link do material, se houver.</li>
+<li>Se desejar imagens no Forms, salve antes a preferência de miniaturas no perfil.</li>
+<li>Clique <strong>Gerar link Google Forms</strong>.</li>
+<li>Aguarde o link aparecer. Copie o link ou clique <strong>Abrir</strong>.</li>
+<li>Teste em uma janela anônima ou em outro celular antes de enviar ao cliente.</li>
+</ol>
+<p>O formulário é criado na conta conectada. Cada conteúdo recebe sua identificação e decisão. “Solicitar ajustes” leva a um comentário obrigatório; “Aprovar” ou “Ainda não revisei” segue para o próximo conteúdo. O visual será o do Google Forms.</p>
+<p>O Studio configura o acesso de resposta por link. Ele não compartilha o link de edição. Se uma política da conta impedir essa configuração, a criação falhará com orientação para conferir permissões. <a href="https://developers.google.com/workspace/forms/api/guides/publish-form" target="_blank" rel="noopener noreferrer">Publicação e respondentes</a>.</p>
+<h3>O que enviar ao cliente</h3>
+<p>Envie somente o link que aparece em <strong>Link para enviar ao cliente</strong>. Não envie o endereço de edição do formulário, credenciais ou backup do Studio.</p>
+<p>Exemplo de mensagem para você copiar e enviar manualmente:</p>
+<blockquote>Olá! Organizei os conteúdos da semana neste link: [cole o link]. Confira as miniaturas, datas e legendas. Em cada conteúdo, marque Aprovar, Solicitar ajustes ou Ainda não revisei. Ao solicitar ajustes, explique o que gostaria de mudar. No final, envie o formulário. Obrigado!</blockquote>
+<p>O aplicativo não envia mensagens ou e-mails automaticamente.</p>
+<h2>13. Como o cliente responde</h2>
+<ol>
+<li>Abrir o link recebido.</li>
+<li>Informar o nome.</li>
+<li>Conferir o conteúdo, a legenda, a data e o material.</li>
+<li>Escolher uma decisão por conteúdo.</li>
+<li>Descrever os ajustes quando solicitados.</li>
+<li>Chegar ao final e clicar <strong>Enviar / Submit</strong> no Google Forms.</li>
+</ol>
+<p>Não é necessário baixar/devolver arquivos. O formulário não é configurado para coletar e-mail verificado; o nome é declarado. Quem receber o link poderá responder, portanto compartilhe-o somente com as pessoas certas. Para aprovações que exijam identificação formal do revisor, será necessário acrescentar uma política de acesso/autenticação.</p>
+<h2>14. Receber e conferir as respostas</h2>
+<p>Abra o planejamento e clique <strong>Atualizar aprovações</strong>. Com a sincronização automática habilitada, o Studio também tenta buscar respostas periodicamente com a tela visível.</p>
+<p>O card passa para <strong>Aprovado</strong> ou <strong>Ajustes solicitados</strong>, com nome, comentário e data. “Ainda não revisei” mantém o item sem uma decisão nova. Uma resposta inválida/incompleta é ignorada e sinalizada. A integração guarda um registro da importação para não reaplicar a mesma resposta repetidamente.</p>
+<p>Se houver mais de uma resposta válida para o mesmo conteúdo e versão, prevalece a decisão com a data de envio mais recente. Aprovar no Forms não conclui automaticamente o processo de produção nem marca a publicação como postada.</p>
+<h2>15. Revisões, novos links e encerramento</h2>
+<ul>
+<li>Alterar conteúdo cria uma nova revisão e invalida a aprovação daquele item.</li>
+<li>Alterar a orientação do planejamento também torna o formulário antigo desatualizado.</li>
+<li>O fechamento de um envio antigo no Google acontece quando o Studio consegue sincronizar. Se estiver offline, o link pode continuar aceitando respostas, mas essas respostas não aprovarão revisões novas no Studio.</li>
+<li>Gere um novo link e envie-o ao cliente após alterações.</li>
+<li>Gerar novamente um formulário que já corresponde ao mesmo conteúdo/versão e à mesma preferência de imagens reutiliza seu link.</li>
+<li>Use <strong>Encerrar recebimento de respostas</strong> para fechar um envio manualmente.</li>
+</ul>
+<p>Um formulário antigo pode continuar no seu Drive como registro, e um formulário cuja criação falhou pode ficar como rascunho fechado. Exclua esses arquivos manualmente quando não precisar mais deles; o Studio não apaga seus documentos do Google silenciosamente.</p>
+<h2>16. Segurança, backup e troca de computador</h2>
+<p>Credenciais e tokens são criptografados no SQLite. A chave local fica em:</p>
+<pre><code>
+data/google-secrets.key
+
+</code></pre>
+<p>O backup SQLite inclui perfil, dados, vínculos e os valores criptografados. Ele <strong>não contém a chave como arquivo separado</strong>. Para migrar a conexão para outro computador, guarde também uma cópia privada de <code>google-secrets.key</code>. Não compartilhe esse arquivo, o banco ou o JSON OAuth com o cliente final.</p>
+<p>Sem a chave correspondente, restaure os dados normalmente, importe as credenciais novamente e reconecte a conta. Antes de sincronizar um banco restaurado, confira os vínculos e os conflitos, pois o Google pode conter eventos/respostas mais recentes que o backup.</p>
+<p>Ao desconectar, o Studio remove o acesso local e tenta revogar a autorização no Google. Eventos, calendário, formulários e miniaturas já criados permanecem. Se houver falha de rede na revogação, remova o acesso também em <a href="https://myaccount.google.com/connections" target="_blank" rel="noopener noreferrer">Conexões da conta Google</a>.</p>
+<p>Para trocar de Gmail, encerre primeiro os formulários ativos com a conta anterior se não quiser deixar links abertos. Formulários de outra conta ficam como histórico e não são consultados com a conta nova. A agenda da nova conta recebe seus próprios vínculos; a agenda antiga permanece na conta anterior.</p>
+<p>O servidor atual é restrito ao computador local. Hospedar o projeto exige uma revisão própria de autenticação, banco persistente, URLs HTTPS e proteção de credenciais; não basta publicar a pasta inteira.</p>
+<h2>17. Resolver problemas</h2>
+<div class="table"><table><thead><tr><th>Mensagem/sintoma</th><th>Verificação e solução</th></tr></thead><tbody>
+<tr><td><code>redirect_uri_mismatch</code></td><td>Compare o retorno mostrado no Studio com o registrado no cliente OAuth: protocolo, host, porta e caminho precisam coincidir. Registre localhost e 127.0.0.1 se usar ambos.</td></tr>
+<tr><td>Acesso bloqueado em Testing</td><td>Confira se o Gmail que conecta foi adicionado como usuário de teste no projeto correto.</td></tr>
+<tr><td>“O Google recusou o acesso” / HTTP 403</td><td>Ative Calendar, Forms e Drive APIs no projeto do Client ID. Reconecte e autorize todos os escopos. Confira políticas de compartilhamento.</td></tr>
+<tr><td>Reconexão solicitada depois de alguns dias</td><td>Pode ser expiração do token de teste, revogação ou mudança de credenciais. Clique Reconectar Google e revise o status de publicação do projeto.</td></tr>
+<tr><td>“Nem todas as permissões foram autorizadas”</td><td>Refaça a conexão e permita Agenda, Forms, respostas e arquivos criados pelo Studio.</td></tr>
+<tr><td>JSON recusado</td><td>Use credenciais OAuth Web; não Desktop, API key ou conta de serviço.</td></tr>
+<tr><td>“A tentativa de conexão expirou”</td><td>Recomece pelo perfil. Evite trocar de navegador, host ou porta no meio do fluxo.</td></tr>
+<tr><td>“Sem resposta do Google”</td><td>Confira internet, proxy, firewall, bloqueios do ambiente que iniciou o servidor e tente novamente. Se necessário, inicie o Studio pelo arquivo Iniciar Studio.cmd fora de uma ferramenta que restrinja rede.</td></tr>
+<tr><td>Limite de requisições / HTTP 429</td><td>Aguarde e tente novamente. Evite repetir cliques de sincronização.</td></tr>
+<tr><td>Evento em conflito</td><td>Confira o evento externo; ajuste o projeto local ou republique a versão do Studio conscientemente.</td></tr>
+<tr><td>Cliente não consegue abrir o Forms</td><td>Confirme que enviou o link de resposta e que o formulário está publicado/aceitando respostas. Teste fora da conta dona.</td></tr>
+<tr><td>Miniatura não aparece ou geração falha com imagem</td><td>Confira a preferência, a Drive API e o compartilhamento. Tente gerar sem imagens para isolar a falha e faça um teste real com o Google antes de enviar ao cliente.</td></tr>
+<tr><td>Aprovação não mudou o card</td><td>Clique Atualizar aprovações; confira se é o formulário da revisão atual e se o cliente clicou Enviar no final.</td></tr>
+<tr><td>Depois de restaurar, credenciais não abrem</td><td>Restaure também a chave correspondente ou reconfigure e reconecte.</td></tr>
+<tr><td>Perfil mudou, mas a conta Google não</td><td>O e-mail de contato do perfil é independente. Use desconectar/conectar para trocar a integração.</td></tr>
+</tbody></table></div>
+<h2>18. Checklist antes do primeiro uso com cliente</h2>
+<ul>
+<li>[ ] APIs ativadas no projeto correto.</li>
+<li>[ ] Cliente OAuth Web com os dois retornos registrados.</li>
+<li>[ ] Gmail do estúdio autorizado e exibido no Studio.</li>
+<li>[ ] Evento de teste criado e prazo atualizado sem duplicação.</li>
+<li>[ ] Conflito externo compreendido e resolvido em um projeto de teste.</li>
+<li>[ ] Formulário aberto em janela anônima ou celular fora da conta do estúdio.</li>
+<li>[ ] Miniaturas conferidas, se habilitadas.</li>
+<li>[ ] Resposta com aprovação recebida pelo Studio.</li>
+<li>[ ] Resposta com ajustes recebida com comentário.</li>
+<li>[ ] Revisão alterada e link antigo invalidado.</li>
+<li>[ ] Backup e chave guardados de forma privada.</li>
+<li>[ ] Cliente recebeu somente o link de resposta e o guia de uso.</li>
+</ul>
+<h2>Referências oficiais</h2>
+<ul>
+<li><a href="https://developers.google.com/identity/protocols/oauth2/web-server" target="_blank" rel="noopener noreferrer">OAuth para aplicações Web</a></li>
+<li><a href="https://developers.google.com/identity/protocols/oauth2#expiration" target="_blank" rel="noopener noreferrer">Expiração de tokens</a></li>
+<li><a href="https://developers.google.com/workspace/calendar/api/auth" target="_blank" rel="noopener noreferrer">Escopos do Calendar</a></li>
+<li><a href="https://developers.google.com/workspace/calendar/api/v3/reference/events/insert" target="_blank" rel="noopener noreferrer">Criação de eventos</a></li>
+<li><a href="https://developers.google.com/workspace/forms/api/reference/rest/v1/forms/create" target="_blank" rel="noopener noreferrer">Criação de formulários</a></li>
+<li><a href="https://developers.google.com/workspace/forms/api/reference/rest/v1/forms/batchUpdate" target="_blank" rel="noopener noreferrer">Alterações em lote no Forms</a></li>
+<li><a href="https://developers.google.com/workspace/forms/api/guides/publish-form" target="_blank" rel="noopener noreferrer">Publicação e acesso de respondentes</a></li>
+<li><a href="https://developers.google.com/workspace/forms/api/reference/rest/v1/forms.responses/list" target="_blank" rel="noopener noreferrer">Consulta das respostas</a></li>
+<li><a href="https://developers.google.com/workspace/drive/api/guides/manage-uploads" target="_blank" rel="noopener noreferrer">Upload de imagens no Drive</a></li>
+</ul></main></body></html>

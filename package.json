@@ -1,0 +1,26 @@
+{
+  "name": "studio-local",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Gestão local de clientes, projetos e tarefas com SQLite",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node server.mjs --dev",
+    "test": "node --test tests/*.test.mjs",
+    "backup": "node scripts/backup.mjs",
+    "restore": "node scripts/restore.mjs",
+    "test:ui": "node tests/browser-qa.mjs",
+    "build": "next build",
+    "start:legacy": "node server-legacy.mjs",
+    "test:static": "node tests/static-browser-qa.mjs"
+  },
+  "dependencies": {
+    "next": "^16.3.2",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  }
+}
